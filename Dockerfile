@@ -2,7 +2,9 @@ FROM node:12-buster
 LABEL maintainer="KnowledgeVis, LLC <curtislisle@knowledgevis.com>"
 
 # Dockerfile to build Arbor-Nova self-contained container.  Start with a basic girder instance
-# by using startup sequence from Kitware's 
+# by using startup sequence from Kitware
+
+# expose port for girder
 EXPOSE 8080
 
 RUN mkdir /girder
@@ -74,7 +76,7 @@ RUN echo 'installing arbor_nova plugin'
 WORKDIR /
 RUN git clone http://github.com/arborworkflows/arbor_nova
 WORKDIR /arbor_nova
-RUN git checkout rhabdo_on_aws
+RUN git checkout terra
 
 # override the default girder webpage
 WORKDIR /arbor_nova/girder_plugin
@@ -95,15 +97,14 @@ RUN yarn build
 # gave up on this build time copy because we couldn't reference the dist dir.  the copy has been moved to startup.sh
 #COPY ./dist /arbornova
 
-# -- install dependencies for Deep Learning scripts
-RUN pip install torch
-RUN pip install torchvision
-RUN pip install opencv-python
-RUN pip install albumentations
-RUN pip install scikit-image
-RUN pip install segmentation_models_pytorch
-RUN pip install tensorflow
-RUN pip install keras
+# -- install dependencies for Terra display
+RUN pip install pandas
+RUN pip install scikit-learn
+RUN pip install girder_client
+
+# install nginx to run trelliscope
+EXPOSE 80
+RUN apt-get install -qy nginx
 
 WORKDIR /
 # copy init script(s) over and start all jobs
