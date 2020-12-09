@@ -8,7 +8,8 @@ cp -r /arbor_nova/client/dist /usr/share/girder/static/arbornova
 cp /arbor_nova/girder_worker_tasks/data/*.csv /
 
 # run mongo
-nohup  mongod --config /etc/mongod.conf &
+#nohup  mongod --config /etc/mongod.conf &
+nohup  mongod  &
 girder serve &
 
 # the communication between jobs and girder

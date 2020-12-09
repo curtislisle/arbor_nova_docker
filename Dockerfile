@@ -1,4 +1,4 @@
-FROM node:12-buster
+FROM mongo:4.2-bionic
 LABEL maintainer="KnowledgeVis, LLC <curtislisle@knowledgevis.com>"
 
 # Dockerfile to build Arbor-Nova self-contained container.  Start with a basic girder instance
@@ -18,10 +18,36 @@ RUN apt-get update && apt-get install -qy \
     libsasl2-dev  && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# get wget, used for nodeJS
+RUN apt-get update
+RUN apt-get install -y wget 
+
+# get python3
+RUN apt-get install -y python3
+RUN apt-get update
+#RUN apt-get install -y distutils
+RUN apt-get install -y python3-pip
+
 RUN alias python="python3"
+RUN alias pip="pip3"
 
 # get pip3 for installations
-RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
+#RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
+
+# install systemd (contains systemctl needed for mongo install)
+#RUN apt-get install -y systemd
+
+# install mongoDB
+# set the timezone so mongodb can install 
+#ENV TZ=Europe/Kiev
+#RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get install -qy curl
+#RUN curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc |  apt-key add -
+#RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+
+#RUN apt-get update
+#RUN apt-get install -y mongodb-org
 
 # download girder source code
 RUN git clone https://github.com/girder/girder.git  /girder
@@ -33,18 +59,18 @@ WORKDIR /girder
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
+# download nodejs for web UI
+# install this before girder because girder build step requires npm
+RUN curl  -sL https://deb.nodesource.com/setup_12.x | bash
+RUN apt-get install -qy nodejs
+
+
 # TODO: Do we want to create editable installs of plugins as well?  We
 # will need a plugin only requirements file for this.
-RUN pip install --upgrade --upgrade-strategy eager --editable .
-RUN pip install girder-worker[girder]
+RUN pip3 install --upgrade --upgrade-strategy eager --editable .
+RUN pip3 install girder-worker[girder]
 RUN girder build
 
-# install mongoDB
-RUN apt-get install gnupg
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc |  apt-key add -
-RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-RUN apt-get update
-RUN apt-get install -y mongodb-org
 
 # go to the configuration directory and change the defaults so the website will be visible outside the container
 WORKDIR /girder/girder/conf
@@ -58,13 +84,13 @@ RUN git clone http://github.com/girder/girder_worker /girder_worker
 WORKDIR /girder_worker
 #RUN git fetch --all --tags --prune
 RUN git checkout 7a590f6f67230e2f98e8acecd313f00d76bdbf00
-RUN pip install -e .[girder_io]
+RUN pip3 install -e .[girder_io]
 
 # get rabbitmq
 RUN apt-get update
 RUN apt-get install -qy --fix-missing rabbitmq-server
 
-RUN pip install .[girder_io,worker]
+RUN pip3 install .[girder_io,worker]
 
 # --- install R since it is used by arbor_nova
 RUN apt-get install -qy r-base
@@ -80,11 +106,11 @@ RUN git checkout terra
 
 # override the default girder webpage
 WORKDIR /arbor_nova/girder_plugin
-RUN pip install -e .
+RUN pip3 install -e .
 
 # install the girder_worker jobs
 WORKDIR /arbor_nova/girder_worker_tasks
-RUN pip install -e .
+RUN pip3 install -e .
 
 # --- install the UI
 RUN curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
@@ -98,13 +124,13 @@ RUN yarn build
 #COPY ./dist /arbornova
 
 # -- install dependencies for Terra display
-RUN pip install pandas
-RUN pip install scikit-learn
-RUN pip install girder_client
+RUN pip3 install pandas
+RUN pip3 install scikit-learn
+RUN pip3 install girder_client
 
 # install nginx to run trelliscope
-EXPOSE 80
-RUN apt-get install -qy nginx
+#EXPOSE 80
+#RUN apt-get install -qy nginx
 
 WORKDIR /
 # copy init script(s) over and start all jobs
