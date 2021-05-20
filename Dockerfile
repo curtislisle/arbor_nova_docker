@@ -34,6 +34,7 @@ RUN alias pip="pip3"
 # get pip3 for installations
 #RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
 
+
 # install systemd (contains systemctl needed for mongo install)
 #RUN apt-get install -y systemd
 
@@ -64,6 +65,9 @@ ENV LANG=C.UTF-8
 RUN curl  -sL https://deb.nodesource.com/setup_12.x | bash
 RUN apt-get install -qy nodejs
 
+# added this to eliminate later build problems on 5/20/21
+RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade cryptography
 
 # TODO: Do we want to create editable installs of plugins as well?  We
 # will need a plugin only requirements file for this.
@@ -91,6 +95,13 @@ RUN apt-get update
 RUN apt-get install -qy --fix-missing rabbitmq-server
 
 RUN pip3 install .[girder_io,worker]
+
+# added 5/20/21 for r to load
+RUN apt-get install -qy libthai-data
+RUN apt-get install -qy libhttp-message-perl
+RUN apt-get install -qy libarchive-cpio-perl
+RUN apt-get install -qy libhtml-form-perl
+RUN apt-get install -qy libreadline-dev
 
 # --- install R since it is used by arbor_nova
 RUN apt-get install -qy r-base
